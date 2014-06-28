@@ -1,6 +1,6 @@
 
 <head>
-<link rel="stylesheet" href="styles.css">
+
 <link rel="import" href="bower_components/polymer/polymer.html">
 <link rel="import" href="bower_components/font-roboto/roboto.html">
 <link rel="import" href="bower_components/core-drawer-panel/core-drawer-panel.html">
@@ -12,47 +12,79 @@
 <link rel="import" href="bower_components/paper-input/paper-input.html">
 <link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="bower_components/core-localstorage/core-localstorage.html">
+<link rel="import" href="bower_components/core-item/core-item.html">
+<link rel="import" href="bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="bower_components/paper-ripple/paper-ripple.html">
 </head>
 <polymer-element name="codelab-app">
   <template>
-
+  <link rel="stylesheet" href="styles.css">
+    <core-localstorage id="storage" name="codelab-app-storage" value="{{data}}"></core-localstorage>
      <core-drawer-panel responsiveWidth="600px" id="drawerPanel">
-      <core-header-panel drawer>
+      <core-header-panel drawer mode="waterfall">
         <core-toolbar >
           <paper-fab icon="icons:add" on-click="{{showNewNoteInput}}"></paper-fab>
         </core-toolbar>
+        <core-item>
+            <label flex>Delete selected</label>
+            <paper-icon-button icon="delete" on-click="{{delete}}"></paper-icon-button>
+        </core-item>
+        <core-item>
+           <paper-button raisedButton class="colored" label="reset"
+                on-click="{{reset}}"></paper-button>
+          </core-item>
+        <div center horizontal layout>
+          <div>Font size</div>
+          <paper-slider value="{{config.fontSize}}" max="32" editable></paper-slider>
+        </div>
+        <core-item>
+          <label flex>Fade out selected</label>
+          <paper-toggle-button class="blue" checked="{{fadeSelected}}">
+          </paper-toggle-button>
+        </core-item>
       </core-header-panel>
 
-      <core-header-panel main>
+      <core-header-panel main mode="waterfall">
         <core-toolbar>
          <paper-icon-button icon="menu" on-click="{{toggleDrawer}}"></paper-icon-button>
          <span flex>My notes</span>
           <paper-icon-button icon="search"></paper-icon-button>
           <paper-icon-button icon="more-vert"></paper-icon-button>
           </core-toolbar>
-          <div class="content">
+          <div class="content" data-fade-selected="{{fadeSelected}}">
+          
+            {{fontSize}}
             <paper-input id="newNoteInput"
                floatingLabel
                label="Add a new note"
                on-change="{{add}}"
                value="{{newNote}}"
                ></paper-input>
-            <template repeat="{{data}}" >
-              <div center horizontal layout class="item">
-                <paper-checkbox checked="{{done}}" on-change="{{dataChanged}}"></paper-checkbox>
-                <div flex class="card">
-                  <p>{{body}}</p>
+            <template repeat="{{note in data}}">
+              <div center horizontal layout class="item" data-done="{{note.done}}">
+                <paper-checkbox checked="{{note.done}}" on-change="{{dataChanged}}"></paper-checkbox>
+                <div flex class="card" >
+                  <p style="font-size:   {{config.fontSize}}px;">{{note.body}}   {{config.fontSize}}</p>
+                  <paper-shadow z="2"></paper-shadow>
+                  <paper-ripple class="fit recenteringTouch"></paper-ripple>
                 </div>
               </div>
             </template>
           </div>
+          <paper-toast id="toast" class="capsule" text="Settings have been reset!"
+               duration="800"></paper-toast>
       </core-header-panel>
-      TOTO
-      </core-drawer-panel>
+    </core-drawer-panel>
   </template>
 <script>
   Polymer('codelab-app', {
     data: [],
+    config: {
+      fontSize: 14
+    },
     toggleDrawer: function() {
       this.$.drawerPanel.togglePanel();
     },
@@ -63,7 +95,17 @@
       this.$.newNoteInput.style.display = 'block';
     },
     dataChanged: function() {
-      this.$storage.save();
+      this.$.storage.save();
+      console.log("saved");
+    },
+    delete: function(e) {
+      this.data = this.data.filter(function(item) {
+        return !item.done;
+      })
+    },
+    reset: function() {
+      this.data = [];
+      this.$.toast.show();
     },
     add: function() {
       if (this.newNote) {
